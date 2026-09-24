@@ -1,0 +1,6 @@
+snapcart/node_modules/
+snapcart/.env
+snapcart/.next/
+socket-server/node_modules/
+socket-server/.env
+socket-server/dist/
