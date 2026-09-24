@@ -158,7 +158,7 @@ function Checkout() {
             state: address.state,
             fullAddress: address.fullAddress,
             pincode: address.pincode,
-            latitufe: position[0],
+            latitude: position[0],
             longtitude: position[1],
           },
           paymentMethod
@@ -193,7 +193,7 @@ function Checkout() {
             state: address.state,
             fullAddress: address.fullAddress,
             pincode: address.pincode,
-            latitufe: position[0],
+            latitude: position[0],
             longtitude: position[1],
           },
           paymentMethod

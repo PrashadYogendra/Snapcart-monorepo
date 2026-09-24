@@ -2,15 +2,33 @@
 import React, { useState } from "react";
 import { IOrder } from "@/models/order.model";
 import { motion } from "motion/react";
-import { ChevronDown, ChevronUp, CreditCard, MapPin, Package, Phone, Truck, User } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  CreditCard,
+  MapPin,
+  Package,
+  Phone,
+  Truck,
+  User,
+} from "lucide-react";
 import Image from "next/image";
-
-
-
+import axios from "axios";
 
 function AdminOrderCard({ order }: { order: IOrder }) {
-    const [expanded,setExpanded]=useState(false)
-    const statusOptions=["pending","out of delivery"]
+  const [expanded, setExpanded] = useState(false);
+  const statusOptions = ["pending", "out of delivery"];
+  const updateStatus = async (orderId: string, status: string) => {
+    try {
+      const result = await axios.post(
+        `/api/admin/update-order-status/${orderId}`,
+        { status },
+      );
+      console.log(result);
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   return (
     <motion.div
@@ -76,10 +94,18 @@ function AdminOrderCard({ order }: { order: IOrder }) {
           >
             {order.status}
           </span>
-          <select className="border border-gray-300 rounded-lg px-3 py-1 text-sm shadow-sm
-          hover:border-green-400 transition focus:ring-2 focus:ring-green-500 outline-none">
-            {statusOptions.map(st=>(
-                <option key={st} value={st}>{st.toUpperCase()}</option>
+          <select
+            value={order.status}
+            onChange={(e) =>
+              updateStatus(order._id?.toString()!, e.target.value)
+            }
+            className="border border-gray-300 rounded-lg px-3 py-1 text-sm shadow-sm
+    hover:border-green-400 transition focus:ring-2 focus:ring-green-500 outline-none"
+          >
+            {statusOptions.map((st) => (
+              <option key={st} value={st}>
+                {st.toUpperCase()}
+              </option>
             ))}
           </select>
         </div>
@@ -139,21 +165,27 @@ function AdminOrderCard({ order }: { order: IOrder }) {
               </div>
             ))}
           </div>
-
         </motion.div>
-            <div className="border-t mt-3 pt-3 flex justify-between items-center text-sm font-semibold
-         text-gray-800">
-            <div className="flex items-center gap-2 text-gray-700 text-sm">
-             <Truck size={16} className="text-green-600"/>
-             <span>Delivery: <span className="text-green-700 font-semibold">{order.status}</span></span>
-            </div>
-            <div>
-              Total: <span className="text-green-700 font-bold">₹{order.totalAmount}</span>
-            </div>
-
-         </div>
-
-
+        <div
+          className="border-t mt-3 pt-3 flex justify-between items-center text-sm font-semibold
+         text-gray-800"
+        >
+          <div className="flex items-center gap-2 text-gray-700 text-sm">
+            <Truck size={16} className="text-green-600" />
+            <span>
+              Delivery:{" "}
+              <span className="text-green-700 font-semibold">
+                {order.status}
+              </span>
+            </span>
+          </div>
+          <div>
+            Total:{" "}
+            <span className="text-green-700 font-bold">
+              ₹{order.totalAmount}
+            </span>
+          </div>
+        </div>
       </div>
     </motion.div>
   );
