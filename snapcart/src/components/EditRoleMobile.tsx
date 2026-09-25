@@ -5,12 +5,12 @@ import { ArrowRight, Bike, User, UserCog } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 function EditRoleMobile() {
     const router = useRouter()
 
-    const [roles] = useState([
+    const [roles,setRoles] = useState([
         { id: "admin", label: "Admin", icon: UserCog },
         { id: "user", label: "User", icon: User },
         { id: "deliveryBoy", label: "Delivery Boy", icon: Bike }
@@ -36,6 +36,20 @@ function EditRoleMobile() {
             console.log("Edit Role Error:", error)
         }
     }
+
+    useEffect(()=>{
+         const checkForAdmin=async ()=>{
+        try {
+            const result=await axios.get("/api/check-for-admin")
+            if(result.data.adminExist){
+               setRoles(prev=>prev.filter(r=>r.id!=="admin"))
+            }
+        } catch (error) {
+            console.log(error)
+        }
+    }
+     checkForAdmin()
+    },[])
 
     return (
         <div className="flex flex-col items-center min-h-screen p-6 w-full bg-white">

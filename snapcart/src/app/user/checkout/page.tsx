@@ -10,14 +10,12 @@ import {
   Loader2,
   LocateFixed,
   MapPin,
-  Navigation,
   Navigation2,
   Phone,
   Search,
   Truck,
   User,
 } from "lucide-react";
-import { set } from "mongoose";
 import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -25,9 +23,8 @@ import { MapContainer, Marker, TileLayer, useMap } from "react-leaflet";
 import { useSelector } from "react-redux";
 import "leaflet/dist/leaflet.css";
 import axios from "axios";
-import L from "leaflet"; // "react-leaflet" nahi, "leaflet" se import karein
+import L from "leaflet";
 import { OpenStreetMapProvider } from "leaflet-geosearch";
-import { image, input } from "motion/react-client";
 
 const markerIcon = new L.Icon({
   iconUrl: "https://cdn-icons-png.flaticon.com/128/2776/2776067.png",
