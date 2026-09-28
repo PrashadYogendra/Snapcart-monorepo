@@ -1,6 +1,5 @@
 'use client'
 import { getSocket } from '@/lib/socket'
-import DeliveryAssignment from '@/models/deliveryAssignment.model'
 import axios from 'axios'
 import React, { useEffect, useState } from 'react'
 
@@ -19,15 +18,26 @@ function DeliveryBoyDashboard() {
         fetchAssignments()
     }, [])
 
-    useEffect(():any=>{
-        const socket=getSocket()
+    useEffect(() => {
+        const socket = getSocket()
 
-        socket.on("new-assignment",(DeliveryAssignment)=>{
-            setAssignments((prev)=>[...prev,DeliveryAssignment])
+        socket.on("new-assignment", (assignment) => {
+            setAssignments((prev) => [...prev, assignment])
+        })
+
+        return () => {
+            socket.off("new-assignment")
         }
-    )
-    return ()=>socket.off("new-assignment")
-    },[])
+    }, [])
+
+    const handleAccept = async (id: string) => {
+        try {
+            const result = await axios.get(`/api/delivery/assignment/${id}/accept-assignment`)
+            console.log(result)
+        } catch (error) {
+            console.log(error)
+        }
+    }
 
     return (
         <div className='w-full min-h-screen bg-gray-50 p-4'>
@@ -39,8 +49,13 @@ function DeliveryBoyDashboard() {
                         <p className='text-gray-600'>{a.order.address.fullAddress}</p>
 
                         <div className='flex gap-3 mt-4'>
-                          <button className='flex-1 bg-green-600 text-white py-2 rounded-lg'>Accept</button>
-                          <button className='flex-1 bg-red-600 text-white py-2 rounded-lg'>Reject</button>
+                            <button
+                                className='flex-1 bg-green-600 text-white py-2 rounded-lg'
+                                onClick={() => handleAccept(a._id)}
+                            >
+                                Accept
+                            </button>
+                            <button className='flex-1 bg-red-600 text-white py-2 rounded-lg'>Reject</button>
                         </div>
                     </div>
                 ))}

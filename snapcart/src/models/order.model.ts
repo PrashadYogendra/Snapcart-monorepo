@@ -25,7 +25,7 @@ export interface IOrder{
         fullAddress:string,
         latitude:number,
         longtitude:number
-    }
+    }   
     assignment?:mongoose.Types.ObjectId
     assignedDeliveryBoy?:mongoose.Types.ObjectId
     status: "pending" | "out of delivery" | "delivered"
