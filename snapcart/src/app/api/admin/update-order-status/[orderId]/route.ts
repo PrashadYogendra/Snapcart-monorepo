@@ -1,4 +1,5 @@
 import connectDb from "@/lib/db"
+import emitEventHandler from "@/lib/emitEventHandler"
 import DeliveryAssignment from "@/models/deliveryAssignment.model"
 import Order from "@/models/order.model"
 import User from "@/models/user.models"
@@ -60,6 +61,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ ord
                 broadcastedTo: candidates,
                 status: "broadcasted"
             })
+
+            await deliveryAssignment.populate("order")
+            for(const boyId of candidates){
+                const boy=await User.findById(boyId)
+                if(boy.socketId){
+                    await emitEventHandler("new-assignment",deliveryAssignment,boy.socketId)
+                }
+            }
 
             order.assignment = deliveryAssignment._id;
             deliveryBoysPayload = availableDeliveryBoys.map(b => ({

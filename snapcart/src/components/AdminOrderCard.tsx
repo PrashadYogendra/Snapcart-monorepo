@@ -17,6 +17,7 @@ import axios from "axios";
 
 function AdminOrderCard({ order }: { order: IOrder }) {
   const [expanded, setExpanded] = useState(false);
+  const [staus,setStatus]=useState<string>(order.status);
   const statusOptions = ["pending", "out of delivery"];
   const updateStatus = async (orderId: string, status: string) => {
     try {
@@ -25,6 +26,7 @@ function AdminOrderCard({ order }: { order: IOrder }) {
         { status },
       );
       console.log(result);
+      setStatus(status)
     } catch (error) {
       console.log(error);
     }
@@ -85,17 +87,17 @@ function AdminOrderCard({ order }: { order: IOrder }) {
         <div className="flex flex-col items-start md:items-end gap-2">
           <span
             className={`text-xs font-semibold px-3 py-1 rounded-full capitalize ${
-              order.status === "delivered"
+              staus === "delivered"
                 ? "bg-green-100 text-green-700"
-                : order.status === "pending"
+                : staus === "pending"
                   ? "bg-yellow-100 text-yellow-700"
                   : "bg-blue-100 text-blue-700"
             }`}
           >
-            {order.status}
+            {staus}
           </span>
           <select
-            value={order.status}
+            value={staus}
             onChange={(e) =>
               updateStatus(order._id?.toString()!, e.target.value)
             }
@@ -175,7 +177,7 @@ function AdminOrderCard({ order }: { order: IOrder }) {
             <span>
               Delivery:{" "}
               <span className="text-green-700 font-semibold">
-                {order.status}
+                {staus}
               </span>
             </span>
           </div>
