@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import {
   ChevronDown,
@@ -53,7 +53,7 @@ export interface IOrder{
 
 function AdminOrderCard({ order }: { order: IOrder }) {
   const [expanded, setExpanded] = useState(false);
-  const [staus,setStatus]=useState<string>(order.status);
+  const [staus,setStatus]=useState<string>("pending");
   const statusOptions = ["pending", "out of delivery"];
   const updateStatus = async (orderId: string, status: string) => {
     try {
@@ -67,6 +67,10 @@ function AdminOrderCard({ order }: { order: IOrder }) {
       console.log(error);
     }
   };
+
+  useEffect(()=>{
+    setStatus(order.status)
+  },[order])
 
   return (
     <motion.div
