@@ -1,197 +1,249 @@
-'use client'
-import LiveMap from '@/components/LiveMap'
-import { getSocket } from '@/lib/socket'
-import { IUser } from '@/models/user.models'
-import { RootState } from '@/redux/store'
-import axios from 'axios'
-import { ArrowLeft, Send } from 'lucide-react'
-import mongoose from 'mongoose'
-import { useParams, useRouter } from 'next/navigation'
-import React, { useEffect, useRef, useState } from 'react'
-import { useSelector } from 'react-redux'
-import { AnimatePresence, motion } from 'motion/react'
-import { IMessage } from '@/models/message.models'
+"use client";
+import { getSocket } from "@/lib/socket";
+import { IUser } from "@/models/user.models";
+import { RootState } from "@/redux/store";
+import axios from "axios";
+import { ArrowLeft, Loader, Send, Sparkle } from "lucide-react";
+import mongoose from "mongoose";
+import dynamic from "next/dynamic";
+import { useParams, useRouter } from "next/navigation";
+import React, { useEffect, useRef, useState } from "react";
+import { useSelector } from "react-redux";
+import { AnimatePresence, motion } from "motion/react";
+import { IMessage } from "@/models/message.models";
+
+const LiveMap = dynamic(() => import("@/components/LiveMap"), {
+  ssr: false,
+  loading: () => <p>Loading map...</p>,
+});
 
 export interface IOrder {
-  _id?: mongoose.Types.ObjectId
-  user: mongoose.Types.ObjectId
+  _id?: mongoose.Types.ObjectId;
+  user: mongoose.Types.ObjectId;
   items: [
     {
-      grocery: mongoose.Types.ObjectId
-      name: string
-      price: string
-      unit: string
-      image: string
-      quantity: number
-    }
-  ]
-  isPaid: boolean
-  totalAmount: string
-  paymentMethod: 'cod' | 'online'
+      grocery: mongoose.Types.ObjectId;
+      name: string;
+      price: string;
+      unit: string;
+      image: string;
+      quantity: number;
+    },
+  ];
+  isPaid: boolean;
+  totalAmount: string;
+  paymentMethod: "cod" | "online";
   address: {
-    fullName: string
-    mobile: string
-    city: string
-    state: string
-    pincode: string
-    fullAddress: string
-    latitude: number
-    longtitude: number
-  }
-  assignment?: mongoose.Types.ObjectId
-  assignedDeliveryBoy?: IUser
-  status: 'pending' | 'out of delivery' | 'delivered'
-  createdAt?: Date
-  updatedAt?: Date
+    fullName: string;
+    mobile: string;
+    city: string;
+    state: string;
+    pincode: string;
+    fullAddress: string;
+    latitude: number;
+    longtitude: number;
+  };
+  assignment?: mongoose.Types.ObjectId;
+  assignedDeliveryBoy?: IUser;
+  status: "pending" | "out of delivery" | "delivered";
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 interface ILocation {
-  latitude: number
-  longtitude: number
+  latitude: number;
+  longtitude: number;
 }
 
 function TrackOrder() {
-  const { userData } = useSelector((state: RootState) => state.user)
-  const params = useParams()
-  const orderId = params.orderId as string
-  const router = useRouter()
+  const { userData } = useSelector((state: RootState) => state.user);
+  const params = useParams();
+  const orderId = params.orderId as string;
+  const router = useRouter();
 
-  const [order, setOrder] = useState<IOrder>()
-  const [newMessage, setNewMessage] = useState('')
-  const [messages, setMessages] = useState<IMessage[]>([])
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const [order, setOrder] = useState<IOrder>();
+  const [newMessage, setNewMessage] = useState("");
+  const [messages, setMessages] = useState<IMessage[]>([]);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const [loading, setLoading] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
 
   const [userLocation, setUserLocation] = useState<ILocation>({
     latitude: 0,
     longtitude: 0,
-  })
+  });
   const [deliveryBoyLocation, setDeliveryBoyLocation] = useState<ILocation>({
     latitude: 0,
     longtitude: 0,
-  })
+  });
 
-  // Order details fetch
   useEffect(() => {
-    if (!orderId) return
+    if (!orderId) return;
     const getOrder = async () => {
       try {
-        const result = await axios.get(`/api/user/get-order/${orderId}`)
-        setOrder(result.data)
+        const result = await axios.get(`/api/user/get-order/${orderId}`);
+        setOrder(result.data);
         setUserLocation({
           latitude: result.data.address.latitude,
           longtitude: result.data.address.longtitude,
-        })
-        const coords = result.data.assignedDeliveryBoy?.location?.coordinates
+        });
+        const coords = result.data.assignedDeliveryBoy?.location?.coordinates;
         if (coords) {
           setDeliveryBoyLocation({
             latitude: coords[1],
             longtitude: coords[0],
-          })
+          });
         }
       } catch (error) {
-        console.log(error)
+        console.log(error);
       }
-    }
-    getOrder()
-  }, [orderId])
+    };
+    getOrder();
+  }, [orderId]);
 
-  // Delivery boy live location
   useEffect(() => {
-    const socket = getSocket()
+    const socket = getSocket();
     const handler = (data: any) => {
       setDeliveryBoyLocation({
         latitude: data.location.coordinates?.[1] ?? data.location.latitude,
         longtitude: data.location.coordinates?.[0] ?? data.location.longtitude,
-      })
-    }
-    socket.on('update-deliveryBoy-location', handler)
+      });
+    };
+    socket.on("update-deliveryBoy-location", handler);
     return () => {
-      socket.off('update-deliveryBoy-location', handler)
-    }
-  }, [])
+      socket.off("update-deliveryBoy-location", handler);
+    };
+  }, []);
 
-  // Chat room join + new messages listener
   useEffect(() => {
-    if (!orderId) return
-    const socket = getSocket()
-    socket.emit('join-room', orderId)
+    if (!orderId) return;
+    const socket = getSocket();
+    socket.emit("join-room", orderId);
 
     const handler = (message: IMessage) => {
       if (String(message.roomId) === String(orderId)) {
-        setMessages((prev) => [...prev, message])
+        setMessages((prev) => [...prev, message]);
       }
-    }
-    socket.on('send-message', handler)
+    };
+    socket.on("send-message", handler);
     return () => {
-      socket.off('send-message', handler)
-    }
-  }, [orderId])
+      socket.off("send-message", handler);
+    };
+  }, [orderId]);
 
-  // Purane messages fetch
   useEffect(() => {
-    if (!orderId) return
+    if (!orderId) return;
     axios
-      .post('/api/chat/messages', { roomId: orderId })
+      .post("/api/chat/messages", { roomId: orderId })
       .then((res) =>
         setMessages((prev) => {
-          const ids = new Set(res.data.map((m: IMessage) => String(m._id)))
-          return [...res.data, ...prev.filter((m) => !ids.has(String(m._id)))]
-        })
+          const ids = new Set(res.data.map((m: IMessage) => String(m._id)));
+          return [...res.data, ...prev.filter((m) => !ids.has(String(m._id)))];
+        }),
       )
-      .catch(console.log)
-  }, [orderId])
+      .catch(console.log);
+  }, [orderId]);
 
-  // Auto scroll
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const sendMsg = () => {
-    if (!newMessage.trim()) return
-    const socket = getSocket()
-    socket.emit('send-message', {
+    if (!newMessage.trim()) return;
+    const socket = getSocket();
+    socket.emit("send-message", {
       roomId: orderId,
       text: newMessage,
       senderId: userData?._id,
       time: new Date().toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
+        hour: "2-digit",
+        minute: "2-digit",
       }),
-    })
-    setNewMessage('')
-  }
+    });
+    setNewMessage("");
+  };
 
-  const isMine = (id: unknown) => String(id) === String(userData?._id)
+  const getSuggestions = async () => {
+    setLoading(true);
+    try {
+      const lastMessage = messages
+        ?.filter((m) => m.senderId === userData?._id)
+        ?.at(-1);
+      const result = await axios.post("/api/chat/ai-suggestions", {
+        message: lastMessage?.text,
+        role: "delivery_boy",
+      });
+      setSuggestions(result.data);
+      setLoading(false);
+    } catch (error) {
+      console.log(error);
+      setLoading(false);
+    }
+  };
+
+  const isMine = (id: unknown) => String(id) === String(userData?._id);
 
   return (
-    <div className='w-full min-h-screen bg-linear-to-b from-green-50 to-white'>
-      <div className='max-w-2xl mx-auto pb-24'>
-        <div className='sticky top-0 bg-white/80 backdrop-blur-xl p-4 border-b shadow flex gap-3 items-center z-999'>
+    <div className="w-full min-h-screen bg-linear-to-b from-green-50 to-white">
+      <div className="max-w-2xl mx-auto pb-24">
+        <div className="sticky top-0 bg-white/80 backdrop-blur-xl p-4 border-b shadow flex gap-3 items-center z-999">
           <button
-            className='p-2 bg-green-100 rounded-full'
+            className="p-2 bg-green-100 rounded-full"
             onClick={() => router.back()}
           >
-            <ArrowLeft className='text-green-700' size={20} />
+            <ArrowLeft className="text-green-700" size={20} />
           </button>
           <div>
-            <h2 className='text-xl font-bold'>Track Order</h2>
-            <p className='text-sm text-gray-600'>
-              order#{order?._id?.toString().slice(-6)}{' '}
-              <span className='text-green-700 font-semibold'>{order?.status}</span>
+            <h2 className="text-xl font-bold">Track Order</h2>
+            <p className="text-sm text-gray-600">
+              order#{order?._id?.toString().slice(-6)}{" "}
+              <span className="text-green-700 font-semibold">
+                {order?.status}
+              </span>
             </p>
           </div>
         </div>
 
-        <div className='px-4 mt-6'>
-          <div className='rounded-3xl overflow-hidden border shadow'>
+        <div className="px-4 mt-6">
+          <div className="rounded-3xl overflow-hidden border shadow">
             <LiveMap
               userLocation={userLocation}
               deliveryBoyLocation={deliveryBoyLocation}
             />
           </div>
 
-          <div className='bg-white rounded-3xl shadow-lg border p-4 h-[430px] flex flex-col mt-4'>
-            <div className='flex-1 overflow-y-auto p-2 space-y-3'>
+          <div className="bg-white rounded-3xl shadow-lg border p-4 h-[430px] flex flex-col mt-4">
+            <div className="flex justify-between items-center mb-3">
+              <span className="font-semibold text-gray-700 text-sm">
+                Quick Replies
+              </span>
+              <motion.button
+              disabled={loading}
+                whileTap={{ scale: 0.9 }}
+                className="px-3 py-1 text-xs flex items-center gap-1 bg-purple-100 text-purple-700 rounded-full
+            shadow-sm border border-purple-200 cursor-pointer"
+              onClick={getSuggestions}
+              >
+                <Sparkle size={14} />
+                {loading?<Loader className='w-5 h-5 animate-spin' />:"AI Suggestion"}
+              </motion.button>
+            </div>
+
+            <div className="flex gap-2 flex-wrap mb-3">
+              {suggestions.map((s, i) => (
+                <motion.div
+                  key={`${s}-${i}`}
+                  whileTap={{ scale: 0.92 }}
+                  className="px-3 py-1 text-xs bg-green-50 border border-green-200 text-green-700
+                rounded-full cursor-pointer"
+                  onClick={() => setNewMessage(s)}
+                >
+                  {s}
+                </motion.div>
+              ))}
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-2 space-y-3">
               <AnimatePresence>
                 {messages.map((msg, i) => (
                   <motion.div
@@ -200,17 +252,19 @@ function TrackOrder() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className={`flex ${isMine(msg.senderId) ? 'justify-end' : 'justify-start'}`}
+                    className={`flex ${isMine(msg.senderId) ? "justify-end" : "justify-start"}`}
                   >
                     <div
                       className={`px-4 py-2 max-w-[75%] rounded-2xl shadow ${
                         isMine(msg.senderId)
-                          ? 'bg-green-600 text-white rounded-br-none'
-                          : 'bg-gray-100 text-gray-800 rounded-bl-none'
+                          ? "bg-green-600 text-white rounded-br-none"
+                          : "bg-gray-100 text-gray-800 rounded-bl-none"
                       }`}
                     >
                       <p>{msg.text}</p>
-                      <p className='text-[10px] opacity-70 mt-1 text-right'>{msg.time}</p>
+                      <p className="text-[10px] opacity-70 mt-1 text-right">
+                        {msg.time}
+                      </p>
                     </div>
                   </motion.div>
                 ))}
@@ -218,17 +272,17 @@ function TrackOrder() {
               <div ref={bottomRef} />
             </div>
 
-            <div className='flex gap-2 mt-3 border-t pt-3'>
+            <div className="flex gap-2 mt-3 border-t pt-3">
               <input
-                type='text'
-                placeholder='Type a message...'
-                className='flex-1 bg-gray-100 px-4 py-2 rounded-xl outline-none focus:ring-2 focus:ring-green-500'
+                type="text"
+                placeholder="Type a message..."
+                className="flex-1 bg-gray-100 px-4 py-2 rounded-xl outline-none focus:ring-2 focus:ring-green-500"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && sendMsg()}
+                onKeyDown={(e) => e.key === "Enter" && sendMsg()}
               />
               <button
-                className='bg-green-600 hover:bg-green-700 p-3 rounded-xl text-white'
+                className="bg-green-600 hover:bg-green-700 p-3 rounded-xl text-white"
                 onClick={sendMsg}
               >
                 <Send size={18} />
@@ -238,7 +292,7 @@ function TrackOrder() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default TrackOrder
+export default TrackOrder;
