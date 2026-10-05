@@ -48,6 +48,7 @@ function Checkout() {
   const [searchQuery,setSearchQuery]=useState("")
   const [position, setPosition] = useState<[number, number] | null>(null)
   const [paymentMethod, setPaymentMethod]=useState<"cod" | "online">("cod")
+  const [placingOrder, setPlacingOrder] = useState(false)
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -78,6 +79,7 @@ function Checkout() {
     const map = useMap();
 
     useEffect(() => {
+      if (!map || !position) return
       map.setView(position as LatLngExpression, 15, { animate: true })
     }, [position, map]);
 
@@ -101,13 +103,19 @@ function Checkout() {
 
   const handleSearchQuery=async ()=>{
     setSearchLoading(true)
-    const provider = new OpenStreetMapProvider()
-    const results = await provider.search({ query: searchQuery });
-    if(results){
+    try {
+      const provider = new OpenStreetMapProvider()
+      const results = await provider.search({ query: searchQuery });
+      if (results && results.length > 0) {
+        setPosition([results[0].y, results[0].x])
+      } else {
+        console.log("No location found for this search query")
+      }
+    } catch (error) {
+      console.error("Search failed:", error)
+    } finally {
       setSearchLoading(false)
-      setPosition([results[0].y,results[0].x])
     }
-  
   }
 
       useEffect(() => {
@@ -118,15 +126,21 @@ function Checkout() {
             `https://nominatim.openstreetmap.org/reverse?lat=${position[0]}&lon=${position[1]}&format=json`,
           );
           console.log(result.data)
+          const fetchedAddress = result.data?.address || {}
           setAddress((prev) => ({
             ...prev,
-            city: result.data.address.city,
-            state: result.data.address.state,
-            pincode: result.data.address.postcode,
-            fullAddress: result.data.display_name,
+            city:
+              fetchedAddress.city ||
+              fetchedAddress.town ||
+              fetchedAddress.village ||
+              fetchedAddress.county ||
+              prev.city,
+            state: fetchedAddress.state || prev.state,
+            pincode: fetchedAddress.postcode || prev.pincode,
+            fullAddress: result.data?.display_name || prev.fullAddress,
           }));
         } catch (error) {
-          console.error(error);
+          console.error("Reverse geocoding failed:", error);
         }
       }
       fetchAddress();
@@ -136,6 +150,11 @@ function Checkout() {
       if (!position) {
         return null;
       }
+      if (!cartData || cartData.length === 0) {
+        console.error("Cart is empty, cannot place order")
+        return null;
+      }
+      setPlacingOrder(true)
       try {
         const result = await axios.post("/api/user/order", {
           userId: userData?._id,
@@ -160,10 +179,12 @@ function Checkout() {
           },
           paymentMethod
         });
-        
+
         router.push("/user/order-success")
-      } catch (error) {
-        console.error(error);
+      } catch (error: any) {
+        console.error("Order failed:", error.response?.data || error);
+      } finally {
+        setPlacingOrder(false)
       }
     };
 
@@ -171,6 +192,11 @@ function Checkout() {
        if (!position) {
         return null;
       }
+      if (!cartData || cartData.length === 0) {
+        console.error("Cart is empty, cannot place order")
+        return null;
+      }
+      setPlacingOrder(true)
       try {
         const result=await axios.post("/api/user/payment",{
           userId: userData?._id,
@@ -196,8 +222,10 @@ function Checkout() {
           paymentMethod
         })
         window.location.href=result.data.url
-      } catch (error) {
-        console.log(error)
+      } catch (error: any) {
+        console.error("Payment init failed:", error.response?.data || error)
+      } finally {
+        setPlacingOrder(false)
       }
     }
 
@@ -257,7 +285,7 @@ function Checkout() {
                 onChange={(e) =>
                   setAddress((prev) => ({
                     ...prev,
-                    fullName: (address.fullName = e.target.value),
+                    fullName: e.target.value,
                   }))
                 }
                 className="pl-10 w-full
@@ -430,8 +458,9 @@ function Checkout() {
           </div>
         </div>
         <motion.button whileTap={{scale:0.93}}
+        disabled={placingOrder}
         className="w-full mt-6 bg-green-600 text-white py-3 rounded-full hover:bg-green-700 transition-all
-        font-semibold"
+        font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
         onClick={()=>{
           if(paymentMethod=="cod"){
             handleCod()
@@ -439,7 +468,9 @@ function Checkout() {
             handleOnlinePaymet()
           }
         }}>
-          {paymentMethod=="cod"?"Place Order" : "Pay & Place Order"}
+          {placingOrder ? (
+            <Loader2 size={18} className="animate-spin mx-auto" />
+          ) : paymentMethod=="cod"?"Place Order" : "Pay & Place Order"}
 
         </motion.button>
 

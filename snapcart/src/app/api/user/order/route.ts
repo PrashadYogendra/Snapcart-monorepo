@@ -8,7 +8,16 @@ export async function POST(req:NextRequest) {
     try {
         await connectDb()
         const { userId,items,paymentMethod,totalAmount,address}=await req.json()
-        if(!items || !userId || !paymentMethod || !totalAmount || !address){
+
+        console.log("Received order payload:", {
+          userId,
+          itemsLength: items?.length,
+          paymentMethod,
+          totalAmount,
+          address,
+        })
+
+        if(!items || !userId || !paymentMethod || totalAmount === undefined || totalAmount === null || !address){
             return NextResponse.json(
                 {message:"please send all details"},
                 {status:400}
@@ -39,7 +48,7 @@ export async function POST(req:NextRequest) {
             )
     } catch (error) {
         return NextResponse.json(
-                {message:`place order error $(error)`},
+                {message:`place order error ${error}`},
                 {status:500}
             )
     }

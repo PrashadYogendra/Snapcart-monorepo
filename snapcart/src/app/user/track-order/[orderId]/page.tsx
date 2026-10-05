@@ -171,7 +171,7 @@ function TrackOrder() {
         ?.at(-1);
       const result = await axios.post("/api/chat/ai-suggestions", {
         message: lastMessage?.text,
-        role: "delivery_boy",
+        role: "user",
       });
       setSuggestions(result.data);
       setLoading(false);
