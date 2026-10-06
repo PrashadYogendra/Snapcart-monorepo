@@ -16,45 +16,47 @@ import Image from "next/image";
 import axios from "axios";
 import mongoose from "mongoose";
 import { IUser } from "@/models/user.models";
+import { getSocket } from "@/lib/socket";
+import { data } from "motion/react-client";
 
-export interface IOrder{
-    _id?:mongoose.Types.ObjectId
-    user:mongoose.Types.ObjectId
-    items:[
-        {
-            grocery:mongoose.Types.ObjectId,
-            name:string,
-            price:string,
-            unit:string,
-            image:string,
-            quantity:number
-        }
-    ],
-    isPaid:boolean,
-    totalAmount:string,
-    paymentMethod:"cod" | "online",
-    address:{
-        fullName:string,
-        mobile:string,
-        city:string,
-        state:string,
-        pincode:string,
-        fullAddress:string,
-        latitude:number,
-        longtitude:number
-    }   
-    assignment?:mongoose.Types.ObjectId
-    assignedDeliveryBoy?:IUser
-    status: "pending" | "out of delivery" | "delivered"
-    createdAt?:Date
-    updatedAt?:Date
+export interface IOrder {
+  _id?: mongoose.Types.ObjectId;
+  user: mongoose.Types.ObjectId;
+  items: [
+    {
+      grocery: mongoose.Types.ObjectId;
+      name: string;
+      price: string;
+      unit: string;
+      image: string;
+      quantity: number;
+    },
+  ];
+  isPaid: boolean;
+  totalAmount: string;
+  paymentMethod: "cod" | "online";
+  address: {
+    fullName: string;
+    mobile: string;
+    city: string;
+    state: string;
+    pincode: string;
+    fullAddress: string;
+    latitude: number;
+    longtitude: number;
+  };
+  assignment?: mongoose.Types.ObjectId;
+  assignedDeliveryBoy?: IUser;
+  status: "pending" | "out of delivery" | "delivered";
+  createdAt?: Date;
+  updatedAt?: Date;
 }
-
 
 function AdminOrderCard({ order }: { order: IOrder }) {
   const [expanded, setExpanded] = useState(false);
-  const [staus,setStatus]=useState<string>("pending");
+  const [status, setStatus] = useState<string>("pending");
   const statusOptions = ["pending", "out of delivery"];
+
   const updateStatus = async (orderId: string, status: string) => {
     try {
       const result = await axios.post(
@@ -62,15 +64,38 @@ function AdminOrderCard({ order }: { order: IOrder }) {
         { status },
       );
       console.log(result);
-      setStatus(status)
+      setStatus(status);
     } catch (error) {
       console.log(error);
     }
   };
 
-  useEffect(()=>{
-    setStatus(order.status)
-  },[order])
+  useEffect(() => {
+    setStatus(order.status);
+  }, [order]);
+
+  useEffect(():any=>{
+    const socket=getSocket()
+    socket.on("order-status-update",(data)=>{
+      if(data.orderId.toString() == order?._id!.toString()){
+        setStatus(data.status)
+      }
+    })
+    return ()=>socket.off("order-status-update")
+  }, [])
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "bg-yellow-100 text-yellow-700";
+      case "out of delivery":
+        return "bg-blue-100 text-blue-700";
+      case "delivered":
+        return "bg-green-100 text-green-700";
+      default:
+        return "bg-gray-100 text-gray-600";
+    }
+  };
 
   return (
     <motion.div
@@ -123,50 +148,59 @@ function AdminOrderCard({ order }: { order: IOrder }) {
             </span>
           </p>
 
-          {order.assignedDeliveryBoy && 
-          <div className="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center
-          justify-between">
-            <div className="flex items-center gap-3 text-sm text-gray-700">
-              <UserCheck className="text-blue-600" size={18}/>
-              <div className="font-semibold text-gray-800">
-                <p>Assignment to : <span>{order.assignedDeliveryBoy.name}</span></p>
-                <p className="text-xs text-gray-600">📞 +91 {order.assignedDeliveryBoy.mobile}</p>
-
+          {order.assignedDeliveryBoy && (
+            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3 text-sm text-gray-700">
+                <UserCheck className="text-blue-600" size={18} />
+                <div className="font-semibold text-gray-800">
+                  <p>
+                    Assignment to :{" "}
+                    <span>{order.assignedDeliveryBoy.name}</span>
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    📞 +91 {order.assignedDeliveryBoy.mobile}
+                  </p>
+                </div>
               </div>
+              <a
+                href={`tel:${order.assignedDeliveryBoy.mobile}`}
+                className="bg-blue-600 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-blue-700 transition"
+              >
+                Call
+              </a>
             </div>
-            <a href={`tel:${order.assignedDeliveryBoy.mobile}`} className="bg-blue-600
-            text-white text-xs px-3 py-1.5 rounded-lg hover:bg-blue-700 transition">Call</a>
-            </div>}
-
-
+          )}
         </div>
 
         <div className="flex flex-col items-start md:items-end gap-2">
           <span
-            className={`text-xs font-semibold px-3 py-1 rounded-full capitalize ${
-              staus === "delivered"
-                ? "bg-green-100 text-green-700"
-                : staus === "pending"
-                  ? "bg-yellow-100 text-yellow-700"
-                  : "bg-blue-100 text-blue-700"
-            }`}
+            className={`text-xs font-semibold px-3 py-1 rounded-full capitalize ${getStatusColor(
+              status,
+            )}`}
           >
-            {staus}
+            {status}
           </span>
-          <select
-            value={staus}
-            onChange={(e) =>
-              updateStatus(order._id?.toString()!, e.target.value)
-            }
-            className="border border-gray-300 rounded-lg px-3 py-1 text-sm shadow-sm
+
+          {status === "delivered" ? (
+            <span className="text-xs font-semibold px-3 py-1 rounded-full bg-green-100 text-green-700 capitalize">
+              delivered
+            </span>
+          ) : (
+            <select
+              value={status}
+              onChange={(e) =>
+                updateStatus(order._id?.toString()!, e.target.value)
+              }
+              className="border border-gray-300 rounded-lg px-3 py-1 text-sm shadow-sm
     hover:border-green-400 transition focus:ring-2 focus:ring-green-500 outline-none"
-          >
-            {statusOptions.map((st) => (
-              <option key={st} value={st}>
-                {st.toUpperCase()}
-              </option>
-            ))}
-          </select>
+            >
+              {statusOptions.map((st) => (
+                <option key={st} value={st}>
+                  {st.toUpperCase()}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
       </div>
       <div className="border-t border-gray-200 pt-3 mt-3">
@@ -233,9 +267,7 @@ function AdminOrderCard({ order }: { order: IOrder }) {
             <Truck size={16} className="text-green-600" />
             <span>
               Delivery:{" "}
-              <span className="text-green-700 font-semibold">
-                {staus}
-              </span>
+              <span className="text-green-700 font-semibold">{status}</span>
             </span>
           </div>
           <div>

@@ -1,9 +1,10 @@
 import connectDb from "@/lib/db";
+import emitEventHandler from "@/lib/emitEventHandler";
 import DeliveryAssignment from "@/models/deliveryAssignment.model";
 import Order from "@/models/order.model";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(req:NextRequest) {
+export async function POST(req: NextRequest) {
     try {
         await connectDb();
         const { orderId, otp } = await req.json()
@@ -14,7 +15,7 @@ export async function POST(req:NextRequest) {
             })
         }
         const order = await Order.findById(orderId)
-        if (!order){
+        if (!order) {
             return NextResponse.json({
                 message: "Order not found",
                 status: 400
@@ -31,11 +32,18 @@ export async function POST(req:NextRequest) {
         order.status = "delivered"
         order.deliveryOtpVerification = true
         order.deliveredAt = new Date()
+
+        if (order.paymentMethod === "cod") {
+            order.isPaid = true
+        }
+
         await order.save()
 
+        await emitEventHandler("order-status-updated",{orderId:order._id, status:order.status})
+
         await DeliveryAssignment.updateOne(
-            {order: order._id},
-            {$set:{assignedTo:null},status: "completed"}
+            { order: order._id },
+            { $set: { assignedTo: null, status: "completed" } }
         )
 
         return NextResponse.json({
@@ -49,6 +57,4 @@ export async function POST(req:NextRequest) {
             status: 500,
         });
     }
-    
-    }
-    
+}
