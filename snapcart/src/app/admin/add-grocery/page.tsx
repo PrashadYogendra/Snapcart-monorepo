@@ -1,7 +1,6 @@
 'use client'
 import axios from 'axios'
 import { ArrowLeft, Loader, PlusCircle, Upload } from 'lucide-react'
-import { set } from 'mongoose'
 import { motion } from 'motion/react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -114,8 +113,8 @@ function AddGrocery() {
                                 value={category}
                                 >
                                     <option value="">Select Category</option>
-                                    {categories.map((cat) => (
-                                        <option value={cat}>{cat}</option>
+                                    {categories.map((cat,i) => (
+                                        <option key={i} value={cat}>{cat}</option>
                                     ))}
                                 </select>
                             </div>
@@ -128,8 +127,8 @@ function AddGrocery() {
                                 value={unit}
                                 >
                                     <option value="">Select Unit</option>
-                                    {units.map((unit) => (
-                                        <option value={unit}>{unit}</option>
+                                    {units.map((unit,i) => (
+                                        <option key={i} value={unit}>{unit}</option>
                                     ))}
                                 </select>
                             </div>

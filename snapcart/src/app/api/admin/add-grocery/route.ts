@@ -2,7 +2,6 @@ import { auth } from "@/auth";
 import uploadOnCloudinary from "@/lib/cloudinary";
 import connectDb from "@/lib/db";
 import Grocery from "@/models/grocery.models";
-import { image } from "motion/react-client";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req:NextRequest) {
