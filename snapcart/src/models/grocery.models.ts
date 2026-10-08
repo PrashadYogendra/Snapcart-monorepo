@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
+import { JSX } from "react/jsx-runtime";
 
 export interface IGrocery{
+    map(arg0: (item: any, index: number) => JSX.Element): import("react").ReactNode;
     _id?:mongoose.Types.ObjectId,
     name:string,
     category:string,

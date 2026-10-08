@@ -13,13 +13,14 @@ import {
 } from "lucide-react";
 import mongoose from "mongoose";
 import Link from "next/link";
-import React, { useEffect, useRef, useState } from "react";
+import React, { FormEvent, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion } from "motion/react";
 import { signOut } from "next-auth/react";
 import { createPortal } from "react-dom";
 import { RootState } from "@/redux/store";
 import { useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
 
 interface IUser {
   _id?: mongoose.Types.ObjectId;
@@ -37,6 +38,8 @@ function Nav({ user }: { user: IUser }) {
   const [searchBarOpen, setSearchBarOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const { cartData } = useSelector((state: RootState) => state.cart);
+  const [search,setSearch]=useState("");
+  const router=useRouter()
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -54,6 +57,20 @@ function Nav({ user }: { user: IUser }) {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+
+  const handleSearch=(e:FormEvent)=>{
+    e.preventDefault()
+  const query=search.trim()
+  if(!query){
+    return router.push("/")
+  }
+
+  router.push(`/?q=${encodeURIComponent(query)}`)
+  setSearch("")
+  setSearchBarOpen(false)
+  }
+
 
   const sideBar = menuOpen
     ? createPortal(
@@ -161,12 +178,15 @@ function Nav({ user }: { user: IUser }) {
       </Link>
 
       {user.role == "user" && (
-        <form className="hidden md:flex items-center bg-white rounded-full px-4 w-1/2 max-w-lg shadow-md">
+        <form className="hidden md:flex items-center bg-white rounded-full px-4 w-1/2 max-w-lg shadow-md"
+        onSubmit={handleSearch}>
           <Search className="text-gray-500 w-5 h-5 mr-2" />
           <input
             type="text"
             placeholder="Search groceries..."
             className="w-full outline-none text-gray-700 placeholder-gray-400"
+            value={search}
+            onChange={(e)=>setSearch(e.target.value)}
           />
         </form>
       )}
@@ -317,11 +337,13 @@ function Nav({ user }: { user: IUser }) {
               >
                 <Search className="text-gray-500 w-5 h-5 mr-2" />
 
-                <form className="grow">
+                <form className="grow" onSubmit={handleSearch}>
                   <input
                     type="text"
                     className="w-full outline-none text-gray-700"
                     placeholder="search groceries...."
+                      value={search}
+            onChange={(e)=>setSearch(e.target.value)}
                   />
                 </form>
 
