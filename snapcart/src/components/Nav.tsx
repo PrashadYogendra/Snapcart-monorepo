@@ -20,7 +20,7 @@ import { signOut } from "next-auth/react";
 import { createPortal } from "react-dom";
 import { RootState } from "@/redux/store";
 import { useSelector } from "react-redux";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface IUser {
   _id?: mongoose.Types.ObjectId;
@@ -38,8 +38,13 @@ function Nav({ user }: { user: IUser }) {
   const [searchBarOpen, setSearchBarOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const { cartData } = useSelector((state: RootState) => state.cart);
-  const [search,setSearch]=useState("");
-  const router=useRouter()
+  const [search, setSearch] = useState("");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    setSearch(searchParams.get("q") || "");
+  }, [searchParams]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -59,16 +64,16 @@ function Nav({ user }: { user: IUser }) {
   }, []);
 
 
-  const handleSearch=(e:FormEvent)=>{
+  const handleSearch = (e: FormEvent) => {
     e.preventDefault()
-  const query=search.trim()
-  if(!query){
-    return router.push("/")
-  }
+    const query = search.trim()
+    if (!query) {
+      router.push("/")
+      return
+    }
 
-  router.push(`/?q=${encodeURIComponent(query)}`)
-  setSearch("")
-  setSearchBarOpen(false)
+    router.push(`/?q=${encodeURIComponent(query)}`)
+    setSearchBarOpen(false)
   }
 
 
@@ -172,6 +177,10 @@ function Nav({ user }: { user: IUser }) {
     >
       <Link
         href={"/"}
+        onClick={() => {
+          setSearch("")
+          router.refresh()
+        }}
         className="text-white font-extrabold text-2xl sm:text-3xl tracking-wide hover:scale-105 transition-transform"
       >
         Snapcart

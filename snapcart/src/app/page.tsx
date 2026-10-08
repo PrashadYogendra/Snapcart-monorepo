@@ -9,6 +9,7 @@ import AdminDashboard from "@/components/AdminDashboard";
 import DeliveryBoy from "@/components/DeliveryBoy";
 import GeoUpdater from '@/components/GeoUpdater';
 import Grocery, { IGrocery } from '@/models/grocery.models';
+import Footer from '@/components/Footer';
 
 
 async function Home(props:{
@@ -60,6 +61,7 @@ async function Home(props:{
         <AdminDashboard />
       ) : <DeliveryBoy />
     }
+    <Footer/>
       
     </>
   );
