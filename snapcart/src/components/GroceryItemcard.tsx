@@ -10,20 +10,10 @@ import {
   addToCart,
   increaseQuantity,
   decreaseQuantity,
+  IGrocery,
 } from '@/redux/cartSlices'
 
-interface IGrocery {
-  _id?: string
-  name: string
-  category: string
-  price: number
-  unit: string
-  image: string
-  createdAt?: Date
-  updatedAt?: Date
-}
-
-function GroceryItemcard({ item }: { item: IGrocery }) {
+function GroceryItemcard({ item }: { item: Omit<IGrocery, "quantity"> }) {
   const dispatch = useDispatch<AppDispatch>()
 
   const { cartData } = useSelector((state: RootState) => state.cart)
@@ -52,7 +42,6 @@ function GroceryItemcard({ item }: { item: IGrocery }) {
         <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300" />
       </div>
 
-      {/* Content */}
       <div className="p-4 flex flex-col flex-1">
         <p className="text-xs text-gray-500 font-medium mb-1">
           {item.category}
@@ -62,7 +51,6 @@ function GroceryItemcard({ item }: { item: IGrocery }) {
           {item.name}
         </h3>
 
-        {/* Price & Unit */}
         <div className="flex items-center justify-between mt-2">
           <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
             {item.unit}
@@ -79,7 +67,6 @@ function GroceryItemcard({ item }: { item: IGrocery }) {
               dispatch(
                 addToCart({
                   ...item,
-                  _id: item._id,
                   quantity: 1,
                 })
               )

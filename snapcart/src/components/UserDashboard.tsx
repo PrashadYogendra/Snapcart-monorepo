@@ -4,7 +4,7 @@ import { IGrocery } from "@/models/grocery.models";
 import GroceryItemcard from "./GroceryItemcard";
 import connectDb from "@/lib/db";
 
-async function UserDashboard({ groceryList }: { groceryList: IGrocery }) {
+async function UserDashboard({ groceryList }: { groceryList: IGrocery[] }) {
   await connectDb();
   const plainGrocery = JSON.parse(JSON.stringify(groceryList))
 

@@ -1,14 +1,14 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import mongoose from "mongoose";
 
-interface IGrocery{
+export interface IGrocery{
     _id:mongoose.Types.ObjectId,
     name:string,
     category:string,
     price:number,
     unit:string,
     quantity:number,
-    image?:string,
+    image:string,
     createdAt?:Date,
     updatedAt?:Date
 }
