@@ -36,7 +36,7 @@ function LoginForm() {
                 return
             }
 
-            router.push('/')
+            window.location.href = '/'
         } catch (error) {
             console.error('Error logging in:', error)
             alert('Something went wrong')
